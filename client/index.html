@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" const="text/html;charset=UTF-8" />
+    <link href="http://fonts.googleapis.com/css?family=Comfortaa" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <!--Socket.io scirpt-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+    <title>Simple Chat App</title>
+</head>
+
+<body>
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+            <h1 class="modal-title">What's your nickname?</h1>
+            <input id="nickname-input" class="custom-input" type="text" />
+        </div>
+
+    </div>
+
+    <!--Big wrapper-->
+    <div class="big-wrapper">
+        <!-- Left Column-->
+        <div class="online-user-wrapper">
+            <div class="online-user-header-container">
+                <header>
+                    <h2>Online Users</h2>
+                </header>
+            </div>
+            <div>
+                <!--Online users goes here-->
+                <ul id="users-list">
+
+                </ul>
+            </div>
+        </div>
+        <!--Chat Wrapper -->
+        <div class="chat-wrapper">
+            <div class="super-chat-title-container">
+                <header>
+                    <h1>Super Chat</h1>
+                </header>
+            </div>
+
+            <!--Messages container-->
+            <div id="chatroom">
+                <!--x is typing goes here-->
+                <div id="feedback"></div>
+            </div>
+
+            <!-- Input zone -->
+            <div id="input_zone">
+                <input id="message" class="vertical-align custom-input" type="text" />
+                <button id="send_message" class="vertical-align btn" type="button">Send</button>
+            </div>
+
+        </div>
+    </div>
+    <!--jQuery script-->
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <!--Scripts-->
+    <!-- <script src="http://localhost:5000/client/chat.js"></script>
+    <script src="http://localhost:5000/client/modalScript.js"></script> -->
+    <script>
+        $(function () {
+            //make connection
+            let socket = io.connect('http://localhost:5000');
+
+            //buttons and inputs
+            let message = $("#message");
+            let send_message = $("#send_message");
+            let chatroom = $("#chatroom");
+            let feedback = $("#feedback");
+            let usersList = $("#users-list");
+            let nickName = $("#nickname-input");
+
+            //Emit message
+            // If send message btn is clicked
+            send_message.click(function () {
+                socket.emit('new_message', {
+                    message: message.val()
+                })
+            });
+            // Or if the enter key is pressed
+            message.keypress(e => {
+                let keycode = (e.keyCode ? e.keyCode : e.which);
+                if (keycode == '13') {
+                    socket.emit('new_message', {
+                        message: message.val()
+                    })
+                }
+            })
+
+            //Listen on new_message
+            socket.on("new_message", (data) => {
+                feedback.html('');
+                message.val('');
+                //append the new message on the chatroom
+                chatroom.append(`
+                        <div>
+                            <div class="box3 sb14">
+                              <p style='color:${data.color}' class="chat-text user-nickname">${data.username}</p>
+                              <p class="chat-text" style="color: rgba(0,0,0,0.87)">${data.message}</p>
+                            </div>
+                        </div>
+                        `)
+                keepTheChatRoomToTheBottom()
+            });
+
+            //Emit a username
+            nickName.keypress(e => {
+                let keycode = (e.keyCode ? e.keyCode : e.which);
+                if (keycode == '13') {
+                    socket.emit('change_username', {
+                        nickName: nickName.val()
+                    });
+                    socket.on('get users', data => {
+                        let html = '';
+                        for (let i = 0; i < data.length; i++) {
+                            html +=
+                                `<li class="list-item" style="color: ${data[i].color}">${data[i].username}</li>`;
+                        }
+                        usersList.html(html)
+                    })
+                }
+            });
+
+            //Emit typing
+            message.on("keypress", e => {
+                let keycode = (e.keyCode ? e.keyCode : e.which);
+                if (keycode != '13') {
+                    socket.emit('typing')
+                }
+            });
+
+            //Listen on typing
+            socket.on('typing', (data) => {
+                feedback.html("<p><i>" + data.username + " is typing a message..." + "</i></p>")
+            });
+        });
+
+        // function thats keeps the chatbox stick to the bottom
+        const keepTheChatRoomToTheBottom = () => {
+            const chatroom = document.getElementById('chatroom');
+            chatroom.scrollTop = chatroom.scrollHeight - chatroom.clientHeight;
+        }
+
+
+        // Get the modal
+        var modal = document.getElementById("myModal");
+        const nicknameInput = document.getElementById("nickname-input");
+
+        // Close modal when nick-name is typed
+        nicknameInput.onkeypress = e => {
+            let keycode = (e.keyCode ? e.keyCode : e.which);
+            if (keycode == '13') {
+                modal.style.display = "none";
+            }
+        };
+    </script>
+</body>
+
+</html>

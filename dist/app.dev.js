@@ -12,8 +12,8 @@ var uuid = require('uuid'); //Disable x-powered-by header
 
 
 app.disable('x-powered-by'); //middlewares
-
-app.use(express["static"]('client')); //routes
+// app.use(express.static('client'));
+//routes
 
 app.get('/', function (req, res) {
   res.sendFile(__dirname + '/client/index.html');
